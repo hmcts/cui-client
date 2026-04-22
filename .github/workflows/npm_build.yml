@@ -1,30 +1,62 @@
-name: Node.js
+name: Node.js Package
+
 on:
   release:
     types: [created]
+  workflow_dispatch:
+
 jobs:
-  release:
+  build:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout repo
-        uses: actions/checkout@v6
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
         with:
-          ref: ${{ github.event.release.target_commitish }}
+          node-version: 24
+          cache: npm
 
-      - name: Validate and extract release information
-        id: release
-        uses: manovotny/github-releases-for-automated-package-publishing-action@v2.0.1
+      - run: npm ci
+      - run: npm run typecheck
+      - run: npm run build
+      - run: npm test
 
-      - name: Set node version and build
-        uses: actions/setup-node@v5
+  publish-npm:
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: actions/setup-node@v5
         with:
-          always-auth: true
-          node-version: '24.x'
-          registry-url: 'https://registry.npmjs.org'
-      - run: yarn install --frozen-lockfile
-      - run: yarn build
+          node-version: 24
+          registry-url: https://registry.npmjs.org/
+          cache: npm
 
-      - name: Publish version
-        run: yarn publish --new-version ${{ steps.release.outputs.version }} --access public
-        env:
-          NODE_AUTH_TOKEN: ${{ secrets.npm_api_token }}
+      - run: npm ci
+      - run: npm run build
+
+      - name: Determine npm dist-tag from GitHub Release
+        if: github.event_name == 'release'
+        run: |
+          if [ "${{ github.event.release.prerelease }}" = "true" ]; then
+            echo "NPM_TAG=next" >> "$GITHUB_ENV"
+          else
+            echo "NPM_TAG=latest" >> "$GITHUB_ENV"
+          fi
+
+      - name: Default npm dist-tag for manual runs
+        if: github.event_name != 'release'
+        run: echo "NPM_TAG=latest" >> "$GITHUB_ENV"
+
+      - name: Publish package (OIDC via npm)
+        run: |
+          unset NODE_AUTH_TOKEN
+          export NPM_CONFIG_USERCONFIG="$RUNNER_TEMP/npmrc-noauth"
+          printf "registry=https://registry.npmjs.org/\n" > "$NPM_CONFIG_USERCONFIG"
+          npm config delete //registry.npmjs.org/:_authToken || true
+          npm config delete _authToken || true
+          npm publish --provenance --access public --tag "$NPM_TAG"

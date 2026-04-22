@@ -1,6 +1,6 @@
 # `@hmcts/cui-client`
 
-[![Node.js Package](https://github.com/hmcts/cui-client/actions/workflows/npmpublish.yml/badge.svg?branch=main)](https://github.com/hmcts/cui-client/actions/workflows/npmpublish.yml)
+[![Node.js Package](https://github.com/hmcts/cui-client/actions/workflows/npm_build.yml/badge.svg?branch=main)](https://github.com/hmcts/cui-client/actions/workflows/npm_build.yml)
 
 Small TypeScript client for the HMCTS CUI API.
 
@@ -85,7 +85,7 @@ npm run typecheck
 npm test
 ```
 
-CI and publishing are handled by [`.github/workflows/npmpublish.yml`](./.github/workflows/npmpublish.yml).
+CI and publishing are handled by [`.github/workflows/npm_build.yml`](./.github/workflows/npm_build.yml).
 
 ## Release Process
 
@@ -107,9 +107,11 @@ git push origin main --follow-tags
 
 If the GitHub Release is marked as a prerelease, the workflow publishes to npm with the `next` dist-tag. Otherwise it publishes with `latest`.
 
+The publish step uses npm Trusted Publishing with GitHub Actions OIDC. It does not use an `NPM_TOKEN`.
+
 ## GitHub And npm Setup
 
 - GitHub Actions must be enabled for this repository.
-- npm Trusted Publishing must be configured for this GitHub repository and workflow.
+- npm Trusted Publishing must be configured for this GitHub repository and the `npm_build.yml` workflow filename.
 - The npm package `@hmcts/cui-client` must exist in the target npm organisation/account.
 - Creating a GitHub Release is the publishing trigger; pushes and pull requests only run validation.
