@@ -180,7 +180,7 @@ export class CUIClient {
     return {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      ServiceAuthorization: `Bearer ${auth.serviceToken}`,
+      ServiceAuthorization: auth.serviceToken,
     };
   }
 

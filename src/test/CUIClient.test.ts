@@ -83,7 +83,7 @@ describe('CUIClient', () => {
           Accept: 'application/json',
           Authorization: 'Bearer idam-token',
           'Content-Type': 'application/json',
-          ServiceAuthorization: 'Bearer service-token',
+          ServiceAuthorization: 'service-token',
         },
       }
     );
@@ -117,7 +117,7 @@ describe('CUIClient', () => {
       headers: {
         Accept: 'application/json',
         'Content-Type': 'application/json',
-        ServiceAuthorization: 'Bearer service-token',
+        ServiceAuthorization: 'service-token',
       },
     });
   });
