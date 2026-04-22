@@ -12,6 +12,8 @@ npm install @hmcts/cui-client axios
 
 ## Usage
 
+`CUIClient` accepts a required `CUIClientConfig` object and an optional `CUIClientOptions` object.
+
 ```ts
 import {
   CUIClient,
@@ -60,6 +62,31 @@ const auth: CUIClientAuth = {
 const journey = await client.getJourneyData('journey-id', auth);
 ```
 
+To pass custom axios request options such as timeouts or a self-signed HTTPS agent:
+
+```ts
+import { Agent } from 'https';
+import { CUIClient, type CUIClientOptions } from '@hmcts/cui-client';
+
+const options: CUIClientOptions = {
+  axiosConfig: {
+    timeout: 10000,
+    httpsAgent: new Agent({
+      rejectUnauthorized: false,
+    }),
+  },
+};
+
+const client = new CUIClient({
+  endpoint: 'https://cui-api.internal.hmcts.net',
+  hmctsServiceId: 'your-service-id',
+}, options);
+```
+
+These request options are applied whether the client uses the built-in axios instance or a custom `httpClient`.
+
+Use relaxed TLS settings only in test or non-production environments.
+
 ## Public API
 
 - `CUIClient`
@@ -76,6 +103,7 @@ const journey = await client.getJourneyData('journey-id', auth);
 - `CUIClientAuth`
 - `CUIStartJourneyAuth`
 - `CUIClientConfig`
+- `CUIClientOptions`
 
 ## Development
 

@@ -1,4 +1,4 @@
-import axios, { type AxiosInstance } from 'axios';
+import axios, { type AxiosInstance, type AxiosRequestConfig } from 'axios';
 import { axiosErrorDetails } from './AxiosErrorAdapter';
 
 export enum CUIYesNo {
@@ -84,6 +84,11 @@ export interface CUIClientConfig {
 
 type CUIHttpClient = Pick<AxiosInstance, 'get' | 'post'>;
 
+export interface CUIClientOptions {
+  axiosConfig?: AxiosRequestConfig;
+  httpClient?: CUIHttpClient;
+}
+
 export class CUIConfigError extends Error {
   constructor(message: string) {
     super(message);
@@ -101,11 +106,13 @@ export class CUIRequestError extends Error {
 export class CUIClient {
   private readonly endpoint: string;
   private readonly httpClient: CUIHttpClient;
+  private readonly axiosConfig?: AxiosRequestConfig;
 
-  constructor(private readonly config: CUIClientConfig, httpClient: CUIHttpClient = axios) {
+  constructor(private readonly config: CUIClientConfig, options: CUIClientOptions = {}) {
     this.validateConfig(config);
     this.endpoint = this.config.endpoint.replace(/\/+$/, '');
-    this.httpClient = httpClient;
+    this.httpClient = options.httpClient ?? axios;
+    this.axiosConfig = options.axiosConfig;
   }
 
   public async startJourney(
@@ -119,9 +126,7 @@ export class CUIClient {
       const response = await this.httpClient.post<CUIStartJourneyResponse>(
         this.getStartJourneyUrl(),
         this.toInboundPayload(request),
-        {
-          headers: this.getStartJourneyHeaders(auth),
-        }
+        this.getRequestConfig(this.getStartJourneyHeaders(auth))
       );
 
       if (!response.data?.url) {
@@ -146,7 +151,7 @@ export class CUIClient {
 
     try {
       const response = await this.httpClient.get<CUIJourneyData>(this.getJourneyDataUrl(id), {
-        headers: this.getServiceHeaders(auth),
+        ...this.getRequestConfig(this.getServiceHeaders(auth)),
       });
 
       return response.data;
@@ -172,7 +177,7 @@ export class CUIClient {
   private getStartJourneyHeaders(auth: CUIStartJourneyAuth): Record<string, string> {
     return {
       ...this.getServiceHeaders(auth),
-      'idam-token': auth.idamToken,
+      'idam-token': `Bearer ${auth.idamToken}`,
     };
   }
 
@@ -190,6 +195,16 @@ export class CUIClient {
 
   private getJourneyDataUrl(id: string): string {
     return `${this.endpoint}/api/payload/${encodeURIComponent(id)}`;
+  }
+
+  private getRequestConfig(headers: Record<string, string>): AxiosRequestConfig {
+    return {
+      ...this.axiosConfig,
+      headers: {
+        ...(this.axiosConfig?.headers ?? {}),
+        ...headers,
+      },
+    };
   }
 
   private validateConfig(config: CUIClientConfig): void {

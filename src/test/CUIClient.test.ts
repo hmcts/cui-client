@@ -1,5 +1,6 @@
+import axios from 'axios';
 import { describe, expect, it, vi } from 'vitest';
-import type { AxiosRequestConfig, AxiosResponse } from 'axios';
+import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
   CUIClient,
   CUIConfigError,
@@ -62,7 +63,7 @@ describe('CUIClient', () => {
         hmctsServiceId: 'ccd',
         logoutUrl: 'https://consumer.example/logout',
       },
-      { get, post } as unknown as HttpClient
+      { httpClient: { get, post } as unknown as HttpClient }
     );
 
     const result = await client.startJourney(request, {
@@ -82,7 +83,7 @@ describe('CUIClient', () => {
         headers: {
           Accept: 'application/json',
           'Content-Type': 'application/json',
-          'idam-token': 'idam-token',
+          'idam-token': 'Bearer idam-token',
           'service-token': 'service-token',
         },
       }
@@ -102,7 +103,7 @@ describe('CUIClient', () => {
         endpoint: 'https://cui.example',
         hmctsServiceId: 'ccd',
       },
-      { get, post } as unknown as HttpClient
+      { httpClient: { get, post } as unknown as HttpClient }
     );
 
     const result = await client.getJourneyData('journey/123', {
@@ -131,6 +132,90 @@ describe('CUIClient', () => {
     }).toThrow(CUIConfigError);
   });
 
+  it('passes axios config through to requests when using the default client', async () => {
+    const post = vi.spyOn(axios, 'post').mockResolvedValue(startJourneyResponse('https://cui.example/journey/123'));
+
+    const client = new CUIClient({
+      endpoint: 'https://cui.example',
+      hmctsServiceId: 'ccd',
+    }, {
+      axiosConfig: {
+        timeout: 10000,
+        httpsAgent: {
+          rejectUnauthorized: false,
+        } as never,
+        headers: {
+          'x-correlation-source': 'consumer-app',
+        },
+      },
+    });
+
+    await client.startJourney(request, {
+      idamToken: 'idam-token',
+      serviceToken: 'service-token',
+    });
+
+    expect(post).toHaveBeenCalledWith(
+      'https://cui.example/api/payload',
+      expect.any(Object),
+      expect.objectContaining({
+        timeout: 10000,
+        httpsAgent: {
+          rejectUnauthorized: false,
+        },
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'idam-token': 'Bearer idam-token',
+          'service-token': 'service-token',
+          'x-correlation-source': 'consumer-app',
+        },
+      })
+    );
+
+    post.mockRestore();
+  });
+
+  it('passes axios config through to requests when using a custom http client', async () => {
+    const post = vi.fn().mockResolvedValue(startJourneyResponse('https://cui.example/journey/123'));
+    const get = vi.fn();
+    const client = new CUIClient(
+      {
+        endpoint: 'https://cui.example',
+        hmctsServiceId: 'ccd',
+      },
+      {
+        axiosConfig: {
+          timeout: 10000,
+          headers: {
+            'x-correlation-source': 'consumer-app',
+          },
+        },
+        httpClient: { get, post } as unknown as HttpClient,
+      }
+    );
+
+    await client.startJourney(request, {
+      idamToken: 'idam-token',
+      serviceToken: 'service-token',
+    });
+
+    expect(post).toHaveBeenCalledWith(
+      'https://cui.example/api/payload',
+      expect.any(Object),
+      {
+        timeout: 10000,
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'idam-token': 'Bearer idam-token',
+          'service-token': 'service-token',
+          'x-correlation-source': 'consumer-app',
+        },
+      }
+    );
+  });
+
   it('wraps downstream errors with request context', async () => {
     const post = vi.fn().mockRejectedValue(new Error('network unavailable'));
     const get = vi.fn();
@@ -139,7 +224,7 @@ describe('CUIClient', () => {
         endpoint: 'https://cui.example',
         hmctsServiceId: 'ccd',
       },
-      { get, post } as unknown as HttpClient
+      { httpClient: { get, post } as unknown as HttpClient }
     );
 
     await expect(
@@ -155,5 +240,37 @@ describe('CUIClient', () => {
         serviceToken: 'service-token',
       })
     ).rejects.toThrow('Error starting CUI journey: network unavailable [action=startJourney | correlationId=corr-123]');
+  });
+
+  it('serializes structured axios error responses instead of showing object object', async () => {
+    const post = vi.fn().mockRejectedValue({
+      isAxiosError: true,
+      message: 'Request failed with status code 400',
+      response: {
+        data: {
+          error: {
+            message: 'Invalid payload',
+            reason: 'masterFlagCode missing',
+          },
+        },
+      },
+    } as AxiosError);
+    const get = vi.fn();
+    const client = new CUIClient(
+      {
+        endpoint: 'https://cui.example',
+        hmctsServiceId: 'ccd',
+      },
+      { httpClient: { get, post } as unknown as HttpClient }
+    );
+
+    await expect(
+      client.startJourney(request, {
+        idamToken: 'idam-token',
+        serviceToken: 'service-token',
+      })
+    ).rejects.toThrow(
+      'Error starting CUI journey: Request failed with status code 400, {"message":"Invalid payload","reason":"masterFlagCode missing"} [action=startJourney | correlationId=corr-123]'
+    );
   });
 });

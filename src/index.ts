@@ -7,6 +7,7 @@ export {
 export type {
   CUIClientAuth,
   CUIClientConfig,
+  CUIClientOptions,
   CUIFlag,
   CUIFlagDetails,
   CUIFlagItem,

@@ -1,6 +1,30 @@
 import axios, { AxiosError } from 'axios';
 
 type ErrorContext = Record<string, string | number | boolean | undefined>;
+type AxiosErrorBody = {
+  error?: unknown;
+  message?: unknown;
+};
+
+const toErrorString = (value: unknown): string | undefined => {
+  if (value === undefined || value === null) {
+    return undefined;
+  }
+
+  if (typeof value === 'string') {
+    return value;
+  }
+
+  if (value instanceof Error) {
+    return value.message;
+  }
+
+  try {
+    return JSON.stringify(value);
+  } catch {
+    return String(value);
+  }
+};
 
 // Get details from an axios error
 export const axiosErrorDetails = (
@@ -9,11 +33,17 @@ export const axiosErrorDetails = (
 ): string => {
   let errorMessage = 'Unknown error';
 
-  if (axios.isAxiosError<{ error?: string }>(error)) {
-    const axiosError = error as AxiosError<{ error?: string }>;
+  if (axios.isAxiosError<AxiosErrorBody>(error)) {
+    const axiosError = error as AxiosError<AxiosErrorBody>;
     errorMessage = axiosError.message;
-    if (axiosError.response?.data?.error) {
-      errorMessage += `, ${axiosError.response.data.error}`;
+
+    const responseDetails =
+      toErrorString(axiosError.response?.data?.error) ??
+      toErrorString(axiosError.response?.data?.message) ??
+      toErrorString(axiosError.response?.data);
+
+    if (responseDetails) {
+      errorMessage += `, ${responseDetails}`;
     }
   } else if (error instanceof Error) {
     errorMessage = error.message;
