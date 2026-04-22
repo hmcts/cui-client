@@ -172,7 +172,7 @@ export class CUIClient {
   private getStartJourneyHeaders(auth: CUIStartJourneyAuth): Record<string, string> {
     return {
       ...this.getServiceHeaders(auth),
-      Authorization: `Bearer ${auth.idamToken}`,
+      'idam-token': auth.idamToken,
     };
   }
 
@@ -180,7 +180,7 @@ export class CUIClient {
     return {
       Accept: 'application/json',
       'Content-Type': 'application/json',
-      ServiceAuthorization: auth.serviceToken,
+      'service-token': auth.serviceToken,
     };
   }
 
