@@ -48,7 +48,11 @@ const { url } = await client.startJourney(request, auth);
 ```
 
 ```ts
-import { CUIClient, type CUIClientAuth } from '@hmcts/cui-client';
+import {
+  CUIActions,
+  CUIClient,
+  type CUIClientAuth,
+} from '@hmcts/cui-client';
 
 const client = new CUIClient({
   endpoint: 'https://cui-api.internal.hmcts.net',
@@ -60,6 +64,14 @@ const auth: CUIClientAuth = {
 };
 
 const journey = await client.getJourneyData('journey-id', auth);
+
+if (journey.action === CUIActions.SUBMIT) {
+  // Use journey.replacementFlags to update the case flags.
+}
+
+if (journey.action === CUIActions.CANCEL) {
+  // Leave the existing case flags unchanged.
+}
 ```
 
 To pass custom axios request options such as timeouts or a self-signed HTTPS agent:
