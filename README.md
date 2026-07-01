@@ -92,12 +92,14 @@ Use relaxed TLS settings only in test or non-production environments.
 - `CUIClient`
 - `CUIConfigError`
 - `CUIRequestError`
+- `CUIActions`
 - `CUIYesNo`
 - `CUIFlagPath`
 - `CUIFlag`
 - `CUIFlagItem`
 - `CUIFlagDetails`
 - `CUIStartJourneyRequest`
+- `CUIJourneyAction`
 - `CUIJourneyData`
 - `CUIStartJourneyResponse`
 - `CUIClientAuth`

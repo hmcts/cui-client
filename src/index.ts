@@ -1,4 +1,5 @@
 export {
+  CUIActions,
   CUIClient,
   CUIConfigError,
   CUIRequestError,
@@ -12,6 +13,7 @@ export type {
   CUIFlagDetails,
   CUIFlagItem,
   CUIFlagPath,
+  CUIJourneyAction,
   CUIJourneyData,
   CUIStartJourneyAuth,
   CUIStartJourneyRequest,

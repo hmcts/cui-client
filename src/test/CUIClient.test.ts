@@ -3,6 +3,7 @@ import { describe, expect, it, vi } from 'vitest';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
   CUIClient,
+  CUIActions,
   CUIConfigError,
   CUIRequestError,
   CUIYesNo,
@@ -94,7 +95,7 @@ describe('CUIClient', () => {
     const post = vi.fn();
     const get = vi.fn().mockResolvedValue(
       journeyDataResponse({
-        action: 'submit',
+        action: CUIActions.SUBMIT,
         correlationId: 'corr-123',
       })
     );
@@ -111,7 +112,7 @@ describe('CUIClient', () => {
     });
 
     expect(result).toEqual({
-      action: 'submit',
+      action: CUIActions.SUBMIT,
       correlationId: 'corr-123',
     });
     expect(get).toHaveBeenCalledWith('https://cui.example/api/payload/journey%2F123', {

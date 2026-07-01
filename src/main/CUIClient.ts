@@ -6,6 +6,13 @@ export enum CUIYesNo {
   NO = 'No',
 }
 
+export const CUIActions = {
+  SUBMIT: 'submit',
+  CANCEL: 'cancel',
+} as const;
+
+export type CUIJourneyAction = typeof CUIActions[keyof typeof CUIActions];
+
 export interface CUIFlagPath {
   id?: string;
   name: string;
@@ -57,7 +64,7 @@ interface CUIStartJourneyPayload extends Omit<CUIStartJourneyRequest, 'masterFla
 }
 
 export interface CUIJourneyData {
-  action: string;
+  action: CUIJourneyAction;
   correlationId: string;
   flagsAsSupplied?: CUIFlagDetails;
   replacementFlags?: CUIFlagDetails;
