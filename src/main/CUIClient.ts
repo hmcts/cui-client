@@ -6,6 +6,18 @@ export enum CUIYesNo {
   NO = 'No',
 }
 
+export enum CUIFlagStatus {
+  ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
+}
+
+export const CUIActions = {
+  SUBMIT: 'submit',
+  CANCEL: 'cancel',
+} as const;
+
+export type CUIJourneyAction = typeof CUIActions[keyof typeof CUIActions];
+
 export interface CUIFlagPath {
   id?: string;
   name: string;
@@ -27,13 +39,41 @@ export interface CUIFlag {
   path: CUIFlagPath[];
   hearingRelevant: CUIYesNo;
   flagCode: string;
-  status?: string;
+  status?: CUIFlagStatus | string;
   availableExternally: CUIYesNo;
 }
 
 export interface CUIFlagItem {
-  id: string;
+  id?: string;
   value: CUIFlag;
+}
+
+export function mergeCUIFlagItems(
+  existingFlags: CUIFlagItem[] = [],
+  replacementFlags: CUIFlagItem[] = []
+): CUIFlagItem[] {
+  if (replacementFlags.length === 0) {
+    return [...existingFlags];
+  }
+
+  const mergedFlags = [...existingFlags];
+
+  for (const replacementFlag of replacementFlags) {
+    if (replacementFlag.id === undefined) {
+      mergedFlags.push(replacementFlag);
+      continue;
+    }
+
+    const existingIndex = mergedFlags.findIndex((existingFlag) => existingFlag.id === replacementFlag.id);
+
+    if (existingIndex === -1) {
+      mergedFlags.push(replacementFlag);
+    } else {
+      mergedFlags[existingIndex] = replacementFlag;
+    }
+  }
+
+  return mergedFlags;
 }
 
 export interface CUIFlagDetails {
@@ -57,7 +97,7 @@ interface CUIStartJourneyPayload extends Omit<CUIStartJourneyRequest, 'masterFla
 }
 
 export interface CUIJourneyData {
-  action: string;
+  action: CUIJourneyAction;
   correlationId: string;
   flagsAsSupplied?: CUIFlagDetails;
   replacementFlags?: CUIFlagDetails;

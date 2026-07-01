@@ -1,8 +1,11 @@
 export {
+  CUIActions,
   CUIClient,
   CUIConfigError,
+  CUIFlagStatus,
   CUIRequestError,
   CUIYesNo,
+  mergeCUIFlagItems,
 } from './main/CUIClient';
 export type {
   CUIClientAuth,
@@ -12,6 +15,7 @@ export type {
   CUIFlagDetails,
   CUIFlagItem,
   CUIFlagPath,
+  CUIJourneyAction,
   CUIJourneyData,
   CUIStartJourneyAuth,
   CUIStartJourneyRequest,

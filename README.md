@@ -48,7 +48,13 @@ const { url } = await client.startJourney(request, auth);
 ```
 
 ```ts
-import { CUIClient, type CUIClientAuth } from '@hmcts/cui-client';
+import {
+  CUIActions,
+  CUIClient,
+  mergeCUIFlagItems,
+  type CUIClientAuth,
+  type CUIFlagDetails,
+} from '@hmcts/cui-client';
 
 const client = new CUIClient({
   endpoint: 'https://cui-api.internal.hmcts.net',
@@ -60,6 +66,27 @@ const auth: CUIClientAuth = {
 };
 
 const journey = await client.getJourneyData('journey-id', auth);
+const currentFlags: CUIFlagDetails = {
+  partyName: 'Jane Doe',
+  roleOnCase: 'Applicant',
+  details: [],
+};
+
+if (journey.action === CUIActions.SUBMIT) {
+  const mergedFlags = mergeCUIFlagItems(
+    currentFlags.details,
+    journey.replacementFlags?.details
+  );
+
+  await updateCaseFlags({
+    ...currentFlags,
+    details: mergedFlags,
+  });
+}
+
+if (journey.action === CUIActions.CANCEL) {
+  // Leave the existing case flags unchanged.
+}
 ```
 
 To pass custom axios request options such as timeouts or a self-signed HTTPS agent:
@@ -87,23 +114,30 @@ These request options are applied whether the client uses the built-in axios ins
 
 Use relaxed TLS settings only in test or non-production environments.
 
+Known flag status values are available as `CUIFlagStatus.ACTIVE` and `CUIFlagStatus.INACTIVE`. The `CUIFlag.status`
+field also accepts other service-defined strings.
+
 ## Public API
 
 - `CUIClient`
 - `CUIConfigError`
 - `CUIRequestError`
+- `CUIActions`
+- `CUIFlagStatus`
 - `CUIYesNo`
 - `CUIFlagPath`
 - `CUIFlag`
 - `CUIFlagItem`
 - `CUIFlagDetails`
 - `CUIStartJourneyRequest`
+- `CUIJourneyAction`
 - `CUIJourneyData`
 - `CUIStartJourneyResponse`
 - `CUIClientAuth`
 - `CUIStartJourneyAuth`
 - `CUIClientConfig`
 - `CUIClientOptions`
+- `mergeCUIFlagItems`
 
 ## Development
 
