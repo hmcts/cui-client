@@ -99,12 +99,16 @@ These request options are applied whether the client uses the built-in axios ins
 
 Use relaxed TLS settings only in test or non-production environments.
 
+Known flag status values are available as `CUIFlagStatus.ACTIVE` and `CUIFlagStatus.INACTIVE`. The `CUIFlag.status`
+field also accepts other service-defined strings.
+
 ## Public API
 
 - `CUIClient`
 - `CUIConfigError`
 - `CUIRequestError`
 - `CUIActions`
+- `CUIFlagStatus`
 - `CUIYesNo`
 - `CUIFlagPath`
 - `CUIFlag`

@@ -2,6 +2,7 @@ export {
   CUIActions,
   CUIClient,
   CUIConfigError,
+  CUIFlagStatus,
   CUIRequestError,
   CUIYesNo,
 } from './main/CUIClient';

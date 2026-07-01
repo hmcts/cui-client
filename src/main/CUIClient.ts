@@ -6,6 +6,11 @@ export enum CUIYesNo {
   NO = 'No',
 }
 
+export enum CUIFlagStatus {
+  ACTIVE = 'Active',
+  INACTIVE = 'Inactive',
+}
+
 export const CUIActions = {
   SUBMIT: 'submit',
   CANCEL: 'cancel',
@@ -34,7 +39,7 @@ export interface CUIFlag {
   path: CUIFlagPath[];
   hearingRelevant: CUIYesNo;
   flagCode: string;
-  status?: string;
+  status?: CUIFlagStatus | string;
   availableExternally: CUIYesNo;
 }
 
