@@ -44,8 +44,36 @@ export interface CUIFlag {
 }
 
 export interface CUIFlagItem {
-  id: string;
+  id?: string;
   value: CUIFlag;
+}
+
+export function mergeCUIFlagItems(
+  existingFlags: CUIFlagItem[] = [],
+  replacementFlags: CUIFlagItem[] = []
+): CUIFlagItem[] {
+  if (replacementFlags.length === 0) {
+    return [...existingFlags];
+  }
+
+  const mergedFlags = [...existingFlags];
+
+  for (const replacementFlag of replacementFlags) {
+    if (replacementFlag.id === undefined) {
+      mergedFlags.push(replacementFlag);
+      continue;
+    }
+
+    const existingIndex = mergedFlags.findIndex((existingFlag) => existingFlag.id === replacementFlag.id);
+
+    if (existingIndex === -1) {
+      mergedFlags.push(replacementFlag);
+    } else {
+      mergedFlags[existingIndex] = replacementFlag;
+    }
+  }
+
+  return mergedFlags;
 }
 
 export interface CUIFlagDetails {

@@ -5,6 +5,7 @@ export {
   CUIFlagStatus,
   CUIRequestError,
   CUIYesNo,
+  mergeCUIFlagItems,
 } from './main/CUIClient';
 export type {
   CUIClientAuth,

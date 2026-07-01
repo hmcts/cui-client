@@ -2,17 +2,47 @@ import axios from 'axios';
 import { describe, expect, it, vi } from 'vitest';
 import type { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios';
 import {
-  CUIClient,
   CUIActions,
+  CUIClient,
   CUIConfigError,
   CUIFlagStatus,
   CUIRequestError,
   CUIYesNo,
+  mergeCUIFlagItems,
+  type CUIFlag,
+  type CUIFlagItem,
   type CUIJourneyData,
   type CUIStartJourneyResponse,
 } from '..';
 
 type HttpClient = Pick<typeof import('axios'), 'get' | 'post'>;
+
+const createFlag = (flagCode: string): CUIFlag => ({
+  name: `Flag ${flagCode}`,
+  name_cy: `Flag ${flagCode} cy`,
+  dateTimeCreated: '2026-04-21T12:00:00.000Z',
+  path: [{ name: 'Level 1' }],
+  hearingRelevant: CUIYesNo.YES,
+  flagCode,
+  status: CUIFlagStatus.ACTIVE,
+  availableExternally: CUIYesNo.NO,
+});
+
+const createFlagItem = (id?: string, flagCode = id ?? 'new-flag'): CUIFlagItem => {
+  const item = {
+    value: createFlag(flagCode),
+  };
+
+  return id === undefined ? item : { ...item, id };
+};
+
+const cloneFlagItem = (item: CUIFlagItem): CUIFlagItem => ({
+  ...(item.id === undefined ? {} : { id: item.id }),
+  value: {
+    ...item.value,
+    path: item.value.path.map((path) => ({ ...path })),
+  },
+});
 
 const request = {
   callbackUrl: 'https://consumer.example/callback',
@@ -275,5 +305,107 @@ describe('CUIClient', () => {
     ).rejects.toThrow(
       'Error starting CUI journey: Request failed with status code 400, {"message":"Invalid payload","reason":"masterFlagCode missing"} [action=startJourney | correlationId=corr-123]'
     );
+  });
+});
+
+describe('mergeCUIFlagItems', () => {
+  it('returns a copy of existing flags when replacement flags are empty', () => {
+    const existingFlags = [createFlagItem('flag-1')];
+
+    const result = mergeCUIFlagItems(existingFlags);
+
+    expect(result).toEqual(existingFlags);
+    expect(result).not.toBe(existingFlags);
+  });
+
+  it('returns a copy of replacement flags when existing flags are empty', () => {
+    const replacementFlags = [createFlagItem('flag-1')];
+
+    const result = mergeCUIFlagItems([], replacementFlags);
+
+    expect(result).toEqual(replacementFlags);
+    expect(result).not.toBe(replacementFlags);
+  });
+
+  it('appends a replacement item without an id', () => {
+    const existingFlags = [createFlagItem('flag-1')];
+    const newFlag = createFlagItem(undefined, 'new-flag');
+
+    const result = mergeCUIFlagItems(existingFlags, [newFlag]);
+
+    expect(result).toEqual([...existingFlags, newFlag]);
+  });
+
+  it('appends a replacement item with a new id', () => {
+    const existingFlags = [createFlagItem('flag-1')];
+    const newFlag = createFlagItem('flag-2');
+
+    const result = mergeCUIFlagItems(existingFlags, [newFlag]);
+
+    expect(result).toEqual([...existingFlags, newFlag]);
+  });
+
+  it('replaces an existing item with a matching id at the same position', () => {
+    const existingFlag = createFlagItem('flag-1', 'old-flag');
+    const unchangedFlag = createFlagItem('flag-2');
+    const replacementFlag = createFlagItem('flag-1', 'replacement-flag');
+
+    const result = mergeCUIFlagItems([existingFlag, unchangedFlag], [replacementFlag]);
+
+    expect(result).toEqual([replacementFlag, unchangedFlag]);
+  });
+
+  it('handles multiple replacements in order', () => {
+    const existingFlag = createFlagItem('flag-1', 'old-flag-1');
+    const secondExistingFlag = createFlagItem('flag-2', 'old-flag-2');
+    const newFlagWithoutId = createFlagItem(undefined, 'new-flag');
+    const replacementForSecondFlag = createFlagItem('flag-2', 'replacement-flag-2');
+    const firstReplacementForNewId = createFlagItem('flag-3', 'first-new-id-flag');
+    const secondReplacementForNewId = createFlagItem('flag-3', 'second-new-id-flag');
+    const replacementForExistingFlag = createFlagItem('flag-1', 'replacement-flag-1');
+
+    const result = mergeCUIFlagItems(
+      [existingFlag, secondExistingFlag],
+      [
+        newFlagWithoutId,
+        replacementForSecondFlag,
+        firstReplacementForNewId,
+        secondReplacementForNewId,
+        replacementForExistingFlag,
+      ]
+    );
+
+    expect(result).toEqual([
+      replacementForExistingFlag,
+      replacementForSecondFlag,
+      newFlagWithoutId,
+      secondReplacementForNewId,
+    ]);
+  });
+
+  it('does not mutate input arrays or items', () => {
+    const existingFlag = createFlagItem('flag-1', 'old-flag');
+    const replacementFlag = createFlagItem('flag-1', 'replacement-flag');
+    const existingFlags = [existingFlag];
+    const replacementFlags = [replacementFlag];
+    const existingFlagsBefore = existingFlags.map(cloneFlagItem);
+    const replacementFlagsBefore = replacementFlags.map(cloneFlagItem);
+
+    mergeCUIFlagItems(existingFlags, replacementFlags);
+
+    expect(existingFlags).toEqual(existingFlagsBefore);
+    expect(replacementFlags).toEqual(replacementFlagsBefore);
+    expect(existingFlags[0]).toBe(existingFlag);
+    expect(replacementFlags[0]).toBe(replacementFlag);
+  });
+
+  it('returns a new array', () => {
+    const existingFlags = [createFlagItem('flag-1')];
+    const replacementFlags = [createFlagItem('flag-2')];
+
+    const result = mergeCUIFlagItems(existingFlags, replacementFlags);
+
+    expect(result).not.toBe(existingFlags);
+    expect(result).not.toBe(replacementFlags);
   });
 });

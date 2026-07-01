@@ -122,6 +122,7 @@ field also accepts other service-defined strings.
 - `CUIStartJourneyAuth`
 - `CUIClientConfig`
 - `CUIClientOptions`
+- `mergeCUIFlagItems`
 
 ## Development
 
