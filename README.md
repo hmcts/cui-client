@@ -51,7 +51,9 @@ const { url } = await client.startJourney(request, auth);
 import {
   CUIActions,
   CUIClient,
+  mergeCUIFlagItems,
   type CUIClientAuth,
+  type CUIFlagDetails,
 } from '@hmcts/cui-client';
 
 const client = new CUIClient({
@@ -64,9 +66,22 @@ const auth: CUIClientAuth = {
 };
 
 const journey = await client.getJourneyData('journey-id', auth);
+const currentFlags: CUIFlagDetails = {
+  partyName: 'Jane Doe',
+  roleOnCase: 'Applicant',
+  details: [],
+};
 
 if (journey.action === CUIActions.SUBMIT) {
-  // Use journey.replacementFlags to update the case flags.
+  const mergedFlags = mergeCUIFlagItems(
+    currentFlags.details,
+    journey.replacementFlags?.details
+  );
+
+  await updateCaseFlags({
+    ...currentFlags,
+    details: mergedFlags,
+  });
 }
 
 if (journey.action === CUIActions.CANCEL) {
